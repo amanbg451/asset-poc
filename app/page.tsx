@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 export default function HomePage() {
   const [isVisible, setIsVisible] = useState(false);
@@ -23,8 +24,15 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
+              {/* Logo Image - Replace with your logo */}
+              <div className="w-10 h-10 relative">
+                <Image
+                  src="/AssetIQ.png"
+                  alt="AssetIQ Logo"
+                  width={40}
+                  height={40}
+                  className="object-contain"
+                />
               </div>
               <span className="text-white font-semibold text-xl">AssetIQ</span>
             </div>
@@ -198,8 +206,15 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">A</span>
+                {/* Logo in footer */}
+                <div className="w-8 h-8 relative">
+                  <Image
+                    src="/AssetIQ.png"
+                    alt="AssetIQ Logo"
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                  />
                 </div>
                 <span className="text-white font-semibold text-xl">AssetIQ</span>
               </div>
