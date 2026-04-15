@@ -11,35 +11,39 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
+      console.log('Login response:', data);
 
-    if (res.ok && data.success) {
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
-      console.log('Token stored, redirecting...');
-      window.location.href = '/dashboard';
-    } else {
-      setError(data.error || 'Login failed');
+      if (res.ok && data.success) {
+        // Store token in localStorage
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          console.log('Token stored successfully');
+        }
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
+      } else {
+        setError(data.error || 'Login failed');
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Connection failed');
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error('Error:', err);
-    setError('Connection failed');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

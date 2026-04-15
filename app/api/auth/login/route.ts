@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
 
     const token = generateToken(user.id, user.email, user.role);
 
-    // Return token in response body
     return NextResponse.json({
       success: true,
       token: token,
