@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest } from 'next/server';
+import { ApiResponse } from '@/common/utils';
 import { getSession } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return ApiResponse.unauthorized('Not authenticated');
     }
 
     const user = await prisma.user.findUnique({
@@ -21,12 +22,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return ApiResponse.notFound('User not found');
     }
 
-    return NextResponse.json({ user });
+    return ApiResponse.success({ user });
   } catch (error) {
     console.error('Get user error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return ApiResponse.error('Internal server error', 500);
   }
 }

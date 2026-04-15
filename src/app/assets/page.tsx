@@ -32,15 +32,24 @@ export default function AssetsPage() {
     description: '',
   });
 
-  // Fetch assets on load
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+  async function checkAuthAndFetch() {
+    try {
+      // Check authentication via API
+      const checkAuth = await fetch('/api/users/me');
+      if (!checkAuth.ok) {
+        router.push('/login');
+        return;
+      }
+      fetchAssets();
+    } catch (error) {
+      console.error('Auth check error:', error);
       router.push('/login');
-      return;
     }
-    fetchAssets();
-  }, [router]);
+  }
+
+  checkAuthAndFetch();
+}, [router]);
 
   const fetchAssets = async () => {
     try {

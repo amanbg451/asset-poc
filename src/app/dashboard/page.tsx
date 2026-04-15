@@ -11,9 +11,17 @@ interface Asset {
   status: string;
 }
 
+interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: string;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
@@ -25,24 +33,32 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        // Check authentication via cookie (not localStorage)
+        const userRes = await fetch('/api/users/me');
+        if (!userRes.ok) {
           router.push('/login');
           return;
         }
+        
+        const userData = await userRes.json();
+        setUser(userData.data?.user || userData.user);
 
+        // Fetch assets
         const assetsRes = await fetch('/api/assets');
         const assetsData = await assetsRes.json();
         
-        if (assetsData.assets) {
-          setAssets(assetsData.assets);
+        // Handle both response formats
+        const assetsList = assetsData.assets || assetsData.data?.assets || [];
+        
+        if (assetsList.length > 0) {
+          setAssets(assetsList);
           
-          const active = assetsData.assets.filter((a: Asset) => a.status === 'Active').length;
-          const inactive = assetsData.assets.filter((a: Asset) => a.status === 'Inactive').length;
-          const problem = assetsData.assets.filter((a: Asset) => a.status === 'Under Maintenance').length;
+          const active = assetsList.filter((a: Asset) => a.status === 'Active').length;
+          const inactive = assetsList.filter((a: Asset) => a.status === 'Inactive').length;
+          const problem = assetsList.filter((a: Asset) => a.status === 'Under Maintenance').length;
           
           setStats({
-            total: assetsData.assets.length,
+            total: assetsList.length,
             active,
             inactive,
             problem,
@@ -50,6 +66,7 @@ export default function DashboardPage() {
         }
       } catch (err) {
         console.error('Error:', err);
+        router.push('/login');
       } finally {
         setLoading(false);
       }
@@ -58,8 +75,8 @@ export default function DashboardPage() {
     fetchData();
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
   };
 
@@ -74,18 +91,25 @@ export default function DashboardPage() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header with Logout */}
+        {/* Header with User Info and Logout */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Asset Management Dashboard</h1>
-            <p className="text-gray-600 mt-1">Monitor and manage all your assets in one place</p>
+            <p className="text-gray-600 mt-1">
+              Welcome back, {user?.name || user?.email || 'User'}!
+            </p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500 capitalize">
+              Role: {user?.role || 'employee'}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}

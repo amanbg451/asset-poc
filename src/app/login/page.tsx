@@ -24,15 +24,9 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
-      console.log('Login response:', data);
 
       if (res.ok && data.success) {
-        // Store token in localStorage
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-          console.log('Token stored successfully');
-        }
-        // Redirect to dashboard
+        // Token is now stored in HTTP-only cookie automatically
         window.location.href = '/dashboard';
       } else {
         setError(data.error || 'Login failed');
