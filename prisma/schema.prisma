@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password_hash String
+  name          String?
+  role          String   @default("employee")
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  createdAssets Asset[] @relation("CreatedBy")
+  assignedAssets Asset[] @relation("AssignedTo")
+  
+  @@map("users")
+}
+
+model Asset {
+  id             Int       @id @default(autoincrement())
+  asset_code     String    @unique
+  asset_name     String
+  category       String?
+  status         String    @default("Active")
+  purchase_date  DateTime?
+  purchase_amount Float?
+  assigned_to    Int?
+  created_by     Int?
+  description    String?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  
+  assignedUser   User?     @relation("AssignedTo", fields: [assigned_to], references: [id])
+  createdByUser  User?     @relation("CreatedBy", fields: [created_by], references: [id])
+  
+  @@map("assets")
+}
