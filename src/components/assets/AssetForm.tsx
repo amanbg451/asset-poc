@@ -1,0 +1,487 @@
+// src/components/assets/AssetForm.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+
+interface Category {
+  id: number;
+  name: string;
+  icon: string;
+}
+
+interface Department {
+  id: number;
+  name: string;
+}
+
+interface Location {
+  id: number;
+  name: string;
+}
+
+interface AssetFormData {
+  // Basic Info
+  asset_code: string;
+  asset_name: string;
+  
+  // Asset Details
+  installation_date: string;
+  tagged_status: string;
+  commissioning_date: string;
+  country: string;
+  state: string;
+  city: string;
+  serial_no: string;
+  model: string;
+  make: string;
+  manufacturer: string;
+  client_id: string;
+  
+  // Relations
+  category_id: string;
+  department_id: string;
+  location_id: string;
+  status: string;
+  
+  // Financial
+  depreciation_period: string;
+  asset_cost: string;
+  useful_life: string;
+  purchase_date: string;
+  current_asset_value: string;
+  salvage_value: string;
+  depreciation: string;
+  
+  // Media (simplified for now)
+  photos: string;
+  videos: string;
+  
+  // Other
+  description: string;
+}
+
+interface AssetFormProps {
+  initialData?: Partial<AssetFormData>;
+  onSubmit: (data: any) => Promise<void>;
+  onCancel: () => void;
+  isEditing?: boolean;
+}
+
+const countries = ['India', 'USA', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'Japan', 'Singapore', 'UAE'];
+const indianStates = [
+  'Andhra Pradesh', 'Bihar', 'Delhi', 'Goa', 'Gujarat', 'Haryana', 
+  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Punjab', 
+  'Rajasthan', 'Tamil Nadu', 'Telangana', 'Uttar Pradesh', 'West Bengal'
+];
+const taggedStatusOptions = ['Tagged', 'Not Tagged'];
+const statusOptions = ['Active', 'Inactive', 'Under Maintenance', 'Disposed'];
+
+export default function AssetForm({ initialData, onSubmit, onCancel, isEditing }: AssetFormProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [formData, setFormData] = useState<AssetFormData>({
+    asset_code: '',
+    asset_name: '',
+    installation_date: '',
+    tagged_status: 'Not Tagged',
+    commissioning_date: '',
+    country: 'India',
+    state: '',
+    city: '',
+    serial_no: '',
+    model: '',
+    make: '',
+    manufacturer: '',
+    client_id: '',
+    category_id: '',
+    department_id: '',
+    location_id: '',
+    status: 'Active',
+    depreciation_period: '',
+    asset_cost: '',
+    useful_life: '',
+    purchase_date: '',
+    current_asset_value: '',
+    salvage_value: '',
+    depreciation: '',
+    photos: '',
+    videos: '',
+    description: '',
+  });
+
+  useEffect(() => {
+    fetchCategories();
+    fetchDepartments();
+    fetchLocations();
+    
+    if (initialData) {
+      setFormData(prev => ({ ...prev, ...initialData }));
+    }
+  }, [initialData]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      if (data.categories) setCategories(data.categories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch('/api/departments');
+      const data = await res.json();
+      if (data.departments) setDepartments(data.departments);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const res = await fetch('/api/locations');
+      const data = await res.json();
+      if (data.locations) setLocations(data.locations);
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await onSubmit(formData);
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading form data...</div>;
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Basic Information Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Basic Information</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Asset Code *</label>
+            <input
+              type="text"
+              name="asset_code"
+              required
+              value={formData.asset_code}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Asset Name *</label>
+            <input
+              type="text"
+              name="asset_name"
+              required
+              value={formData.asset_name}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Status</label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Tagged Status</label>
+            <select
+              name="tagged_status"
+              value={formData.tagged_status}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              {taggedStatusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Asset Details Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Asset Details</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Category</label>
+            <select
+              name="category_id"
+              value={formData.category_id}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Category</option>
+              {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Department</label>
+            <select
+              name="department_id"
+              value={formData.department_id}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Department</option>
+              {departments.map(dept => <option key={dept.id} value={dept.id}>{dept.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Location</label>
+            <select
+              name="location_id"
+              value={formData.location_id}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Location</option>
+              {locations.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Serial No.</label>
+            <input
+              type="text"
+              name="serial_no"
+              value={formData.serial_no}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Model</label>
+            <input
+              type="text"
+              name="model"
+              value={formData.model}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Make</label>
+            <input
+              type="text"
+              name="make"
+              value={formData.make}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Manufacturer</label>
+            <input
+              type="text"
+              name="manufacturer"
+              value={formData.manufacturer}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Client ID</label>
+            <input
+              type="text"
+              name="client_id"
+              value={formData.client_id}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Location Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Location</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Country</label>
+            <select
+              name="country"
+              value={formData.country}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              {countries.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">State</label>
+            <select
+              name="state"
+              value={formData.state}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select State</option>
+              {indianStates.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">City</label>
+            <input
+              type="text"
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Financial Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Financial Information</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Purchase Date</label>
+            <input
+              type="date"
+              name="purchase_date"
+              value={formData.purchase_date}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Asset Cost</label>
+            <input
+              type="number"
+              step="0.01"
+              name="asset_cost"
+              value={formData.asset_cost}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Current Asset Value</label>
+            <input
+              type="number"
+              step="0.01"
+              name="current_asset_value"
+              value={formData.current_asset_value}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Salvage Value</label>
+            <input
+              type="number"
+              step="0.01"
+              name="salvage_value"
+              value={formData.salvage_value}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Depreciation Period (Years)</label>
+            <input
+              type="number"
+              name="depreciation_period"
+              value={formData.depreciation_period}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Useful Life (Years)</label>
+            <input
+              type="number"
+              name="useful_life"
+              value={formData.useful_life}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Dates Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Important Dates</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Installation Date</label>
+            <input
+              type="date"
+              name="installation_date"
+              value={formData.installation_date}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Commissioning Date</label>
+            <input
+              type="date"
+              name="commissioning_date"
+              value={formData.commissioning_date}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Description Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Additional Information</h2>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            rows={4}
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter asset description, specifications, or notes..."
+          />
+        </div>
+      </div>
+
+      {/* Form Actions */}
+      <div className="flex justify-end space-x-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          {isEditing ? 'Update Asset' : 'Save Asset'}
+        </button>
+      </div>
+    </form>
+  );
+}

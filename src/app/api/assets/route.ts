@@ -25,12 +25,13 @@ const getAssetsHandler = async (request: NextRequest) => {
   const assets = await prisma.asset.findMany({
     include: {
       category: true,
-      assignedUser: {  // ← Include assigned user details
+      department: true,
+      location: true,
+      assignedUser: {
         select: {
           id: true,
           name: true,
           email: true,
-          role: true,
         }
       }
     },
@@ -54,43 +55,72 @@ const postAssetsHandler = async (request: NextRequest) => {
   }
   
   const body = await request.json();
-  const { asset_code, asset_name, category_id, status, purchase_date, purchase_amount, description } = body;
   
-  if (!asset_code || !asset_name) {
-    return NextResponse.json({ 
-      success: false,
-      error: 'Asset code and name are required' 
-    }, { status: 400 });
-  }
+  // Helper function to convert empty strings to null
+  const toInt = (value: any) => {
+    if (value === undefined || value === null || value === '') return null;
+    const num = parseInt(value);
+    return isNaN(num) ? null : num;
+  };
   
-  const existingAsset = await prisma.asset.findUnique({
-    where: { asset_code },
-  });
+  const toFloat = (value: any) => {
+    if (value === undefined || value === null || value === '') return null;
+    const num = parseFloat(value);
+    return isNaN(num) ? null : num;
+  };
   
-  if (existingAsset) {
-    return NextResponse.json({ 
-      success: false,
-      error: 'Asset code already exists' 
-    }, { status: 409 });
-  }
-  
-  logger.info('Creating new asset', { 
-    asset_code, 
-    asset_name, 
-    userId: session.userId 
-  });
+  const toDate = (value: any) => {
+    if (value === undefined || value === null || value === '') return null;
+    return new Date(value);
+  };
   
   const asset = await prisma.asset.create({
     data: {
-      asset_code,
-      asset_name,
-      category_id: category_id || null,
-      status: status || 'Active',
-      purchase_date: purchase_date ? new Date(purchase_date) : null,
-      purchase_amount: purchase_amount ? parseFloat(purchase_amount) : null,
-      description: description || null,
+      asset_code: body.asset_code,
+      asset_name: body.asset_name,
+      
+      // Asset Details
+      installation_date: toDate(body.installation_date),
+      tagged_status: body.tagged_status || 'Not Tagged',
+      commissioning_date: toDate(body.commissioning_date),
+      country: body.country || 'India',
+      state: body.state,
+      city: body.city,
+      serial_no: body.serial_no,
+      model: body.model,
+      make: body.make,
+      manufacturer: body.manufacturer,
+      client_id: body.client_id,
+      
+      // Relations
+      category_id: toInt(body.category_id),
+      department_id: toInt(body.department_id),
+      location_id: toInt(body.location_id),
+      status: body.status || 'Active',
+      
+      // Financial
+      depreciation_period: toInt(body.depreciation_period),
+      asset_cost: toFloat(body.asset_cost),
+      useful_life: toInt(body.useful_life),
+      purchase_date: toDate(body.purchase_date),
+      current_asset_value: toFloat(body.current_asset_value),
+      salvage_value: toFloat(body.salvage_value),
+      depreciation: body.depreciation,
+      
+      // Media
+      photos: body.photos,
+      videos: body.videos,
+      
+      // Other
+      description: body.description,
       created_by: session.userId,
     },
+  });
+  
+  logger.info('Creating new asset', { 
+    asset_code: body.asset_code, 
+    asset_name: body.asset_name, 
+    userId: session.userId 
   });
   
   return NextResponse.json({ 

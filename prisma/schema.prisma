@@ -23,29 +23,76 @@ model User {
 }
 
 model Asset {
-  id             Int       @id @default(autoincrement())
-  asset_code     String    @unique
-  asset_name     String
-  status         String    @default("Active")
-  purchase_date  DateTime?
-  purchase_amount Float?
-  assigned_to    Int?
-  assigned_date  DateTime?
-  expected_return DateTime?
-  assigned_notes String?
-  created_by     Int?
-  description    String?
-  location_id    Int?
-  department_id  Int?
-  category_id    Int?
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @updatedAt
+  id                    Int       @id @default(autoincrement())
+  asset_code            String    @unique
+  asset_name            String
   
-  location       Location?   @relation(fields: [location_id], references: [id])
-  department     Department? @relation(fields: [department_id], references: [id])
-  category       Category?   @relation(fields: [category_id], references: [id])
-  assignedUser   User?       @relation("AssignedTo", fields: [assigned_to], references: [id])
-  createdByUser  User?       @relation("CreatedBy", fields: [created_by], references: [id])
+  // Asset Details
+  installation_date     DateTime?
+  tagged_status         String?   @default("Not Tagged")
+  commissioning_date    DateTime?
+  country               String?   @default("India")
+  state                 String?
+  city                  String?
+  serial_no             String?
+  model                 String?
+  make                  String?
+  manufacturer          String?
+  client_id             String?
+  
+  // Status & Relations
+  status                String    @default("Active")
+  location_id           Int?
+  department_id         Int?
+  category_id           Int?
+  
+  // Financial Fields
+  depreciation_period   Int?
+  asset_cost            Float?
+  useful_life           Int?
+  purchase_date         DateTime?
+  current_asset_value   Float?
+  salvage_value         Float?
+  depreciation          String?
+  
+  // Media (JSON arrays)
+  photos                String?   // Comma-separated URLs or JSON
+  videos                String?   // Comma-separated URLs or JSON
+  
+  // QR Code
+  qr_url                String?
+  qr_image              String?
+  
+  // GPS Location
+  latitude              Float?
+  longitude             Float?
+  address               String?
+  
+  // Tagging Info (from mobile app)
+  tagged_date           DateTime?
+  tagged_id             String?
+  tagged_image          String?
+  tagged_video          String?
+  
+  // Assignment Fields
+  assigned_to           Int?
+  assigned_date         DateTime?
+  expected_return       DateTime?
+  assigned_notes        String?
+  
+  // Audit
+  created_by            Int?
+  tagged_by             Int?
+  description           String?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+  
+  // Relations
+  location              Location?   @relation(fields: [location_id], references: [id])
+  department            Department? @relation(fields: [department_id], references: [id])
+  category              Category?   @relation(fields: [category_id], references: [id])
+  assignedUser          User?       @relation("AssignedTo", fields: [assigned_to], references: [id])
+  createdByUser         User?       @relation("CreatedBy", fields: [created_by], references: [id])
   
   @@map("assets")
 }

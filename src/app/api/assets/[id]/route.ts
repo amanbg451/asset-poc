@@ -10,6 +10,24 @@ const limiter = rateLimit({
   message: 'Too many requests. Please slow down.',
 });
 
+// Helper functions for type conversion
+const toInt = (value: any) => {
+  if (value === undefined || value === null || value === '') return null;
+  const num = parseInt(value);
+  return isNaN(num) ? null : num;
+};
+
+const toFloat = (value: any) => {
+  if (value === undefined || value === null || value === '') return null;
+  const num = parseFloat(value);
+  return isNaN(num) ? null : num;
+};
+
+const toDate = (value: any) => {
+  if (value === undefined || value === null || value === '') return null;
+  return new Date(value);
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -32,6 +50,14 @@ export async function GET(
     
     const asset = await prisma.asset.findUnique({
       where: { id: assetId },
+      include: {
+        category: true,
+        department: true,
+        location: true,
+        assignedUser: {
+          select: { id: true, name: true, email: true }
+        }
+      }
     });
     
     if (!asset) {
@@ -66,7 +92,6 @@ export async function PUT(
     }
     
     const body = await request.json();
-    const { asset_name, category, status, purchase_date, purchase_amount, description } = body;
     
     // Check if asset exists
     const existingAsset = await prisma.asset.findUnique({
@@ -82,12 +107,44 @@ export async function PUT(
     const asset = await prisma.asset.update({
       where: { id: assetId },
       data: {
-        asset_name: asset_name || existingAsset.asset_name,
-        category: category !== undefined ? category : existingAsset.category,
-        status: status || existingAsset.status,
-        purchase_date: purchase_date ? new Date(purchase_date) : existingAsset.purchase_date,
-        purchase_amount: purchase_amount ? parseFloat(purchase_amount) : existingAsset.purchase_amount,
-        description: description !== undefined ? description : existingAsset.description,
+        // Basic Info
+        asset_code: body.asset_code,
+        asset_name: body.asset_name,
+        
+        // Asset Details
+        installation_date: toDate(body.installation_date),
+        tagged_status: body.tagged_status,
+        commissioning_date: toDate(body.commissioning_date),
+        country: body.country,
+        state: body.state,
+        city: body.city,
+        serial_no: body.serial_no,
+        model: body.model,
+        make: body.make,
+        manufacturer: body.manufacturer,
+        client_id: body.client_id,
+        
+        // Relations
+        category_id: toInt(body.category_id),
+        department_id: toInt(body.department_id),
+        location_id: toInt(body.location_id),
+        status: body.status,
+        
+        // Financial
+        depreciation_period: toInt(body.depreciation_period),
+        asset_cost: toFloat(body.asset_cost),
+        useful_life: toInt(body.useful_life),
+        purchase_date: toDate(body.purchase_date),
+        current_asset_value: toFloat(body.current_asset_value),
+        salvage_value: toFloat(body.salvage_value),
+        depreciation: body.depreciation,
+        
+        // Media
+        photos: body.photos,
+        videos: body.videos,
+        
+        // Other
+        description: body.description,
       },
     });
     

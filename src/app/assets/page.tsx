@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
+import AssetForm from '@/components/assets/AssetForm';
 
 interface Category {
   id: number;
@@ -33,6 +34,28 @@ interface Asset {
   expected_return?: string;
   assigned_notes?: string;
   description: string;
+  // New fields
+  installation_date?: string;
+  tagged_status?: string;
+  commissioning_date?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  serial_no?: string;
+  model?: string;
+  make?: string;
+  manufacturer?: string;
+  client_id?: string;
+  department_id?: number | null;
+  location_id?: number | null;
+  depreciation_period?: number;
+  asset_cost?: number;
+  useful_life?: number;
+  current_asset_value?: number;
+  salvage_value?: number;
+  depreciation?: string;
+  photos?: string;
+  videos?: string;
 }
 
 export default function AssetsPage() {
@@ -50,15 +73,6 @@ export default function AssetsPage() {
     assigned_date: new Date().toISOString().split('T')[0],
     expected_return: '',
     notes: '',
-  });
-  const [formData, setFormData] = useState({
-    asset_code: '',
-    asset_name: '',
-    category_id: '',
-    status: 'Active',
-    purchase_date: '',
-    purchase_amount: '',
-    description: '',
   });
 
   useEffect(() => {
@@ -174,51 +188,49 @@ export default function AssetsPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const url = editingAsset 
-      ? `/api/assets/${editingAsset.id}`
-      : '/api/assets';
-    
-    const method = editingAsset ? 'PUT' : 'POST';
-    
-    const payload = {
-      asset_code: formData.asset_code,
-      asset_name: formData.asset_name,
-      category_id: formData.category_id ? parseInt(formData.category_id) : null,
-      status: formData.status,
-      purchase_date: formData.purchase_date,
-      purchase_amount: formData.purchase_amount ? parseFloat(formData.purchase_amount) : null,
-      description: formData.description,
-    };
+  const handleCreateAsset = async (formData: any) => {
+    try {
+      const res = await fetch('/api/assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      
+      if (res.ok) {
+        setShowModal(false);
+        fetchAssets();
+        alert('Asset created successfully!');
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to create asset');
+      }
+    } catch (error) {
+      console.error('Error creating asset:', error);
+      alert('Connection failed');
+    }
+  };
+
+  const handleUpdateAsset = async (formData: any) => {
+    if (!editingAsset) return;
     
     try {
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(`/api/assets/${editingAsset.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       });
       
       if (res.ok) {
         setShowModal(false);
         setEditingAsset(null);
-        setFormData({
-          asset_code: '',
-          asset_name: '',
-          category_id: '',
-          status: 'Active',
-          purchase_date: '',
-          purchase_amount: '',
-          description: '',
-        });
         fetchAssets();
+        alert('Asset updated successfully!');
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to save asset');
+        alert(error.error || 'Failed to update asset');
       }
     } catch (error) {
-      console.error('Error saving asset:', error);
+      console.error('Error updating asset:', error);
       alert('Connection failed');
     }
   };
@@ -242,20 +254,6 @@ export default function AssetsPage() {
     }
   };
 
-  const handleEdit = (asset: Asset) => {
-    setEditingAsset(asset);
-    setFormData({
-      asset_code: asset.asset_code,
-      asset_name: asset.asset_name,
-      category_id: asset.category_id?.toString() || '',
-      status: asset.status,
-      purchase_date: asset.purchase_date?.split('T')[0] || '',
-      purchase_amount: asset.purchase_amount?.toString() || '',
-      description: asset.description || '',
-    });
-    setShowModal(true);
-  };
-
   const openAssignModal = (asset: Asset) => {
     setSelectedAsset(asset);
     setAssignFormData({
@@ -265,6 +263,39 @@ export default function AssetsPage() {
       notes: '',
     });
     setShowAssignModal(true);
+  };
+
+  const prepareInitialData = (asset: Asset | null) => {
+    if (!asset) return undefined;
+    return {
+      asset_code: asset.asset_code,
+      asset_name: asset.asset_name,
+      installation_date: asset.installation_date?.split('T')[0] || '',
+      tagged_status: asset.tagged_status || 'Not Tagged',
+      commissioning_date: asset.commissioning_date?.split('T')[0] || '',
+      country: asset.country || 'India',
+      state: asset.state || '',
+      city: asset.city || '',
+      serial_no: asset.serial_no || '',
+      model: asset.model || '',
+      make: asset.make || '',
+      manufacturer: asset.manufacturer || '',
+      client_id: asset.client_id || '',
+      category_id: asset.category_id?.toString() || '',
+      department_id: asset.department_id?.toString() || '',
+      location_id: asset.location_id?.toString() || '',
+      status: asset.status,
+      depreciation_period: asset.depreciation_period?.toString() || '',
+      asset_cost: asset.asset_cost?.toString() || '',
+      useful_life: asset.useful_life?.toString() || '',
+      purchase_date: asset.purchase_date?.split('T')[0] || '',
+      current_asset_value: asset.current_asset_value?.toString() || '',
+      salvage_value: asset.salvage_value?.toString() || '',
+      depreciation: asset.depreciation || '',
+      photos: asset.photos || '',
+      videos: asset.videos || '',
+      description: asset.description || '',
+    };
   };
 
   if (loading) {
@@ -297,15 +328,6 @@ export default function AssetsPage() {
           <button
             onClick={() => {
               setEditingAsset(null);
-              setFormData({
-                asset_code: '',
-                asset_name: '',
-                category_id: '',
-                status: 'Active',
-                purchase_date: '',
-                purchase_amount: '',
-                description: '',
-              });
               setShowModal(true);
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
@@ -321,10 +343,10 @@ export default function AssetsPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asset Code</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asset Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Serial No.</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned To</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchase Amount</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
@@ -340,6 +362,7 @@ export default function AssetsPage() {
                     <tr key={asset.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm text-gray-900">{asset.asset_code}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{asset.asset_name}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{asset.serial_no || '-'}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {getCategoryName(asset)}
                       </td>
@@ -365,12 +388,12 @@ export default function AssetsPage() {
                           {asset.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {asset.purchase_amount ? `$${asset.purchase_amount.toLocaleString()}` : '-'}
-                      </td>
                       <td className="px-6 py-4 text-sm space-x-2">
                         <button
-                          onClick={() => handleEdit(asset)}
+                          onClick={() => {
+                            setEditingAsset(asset);
+                            setShowModal(true);
+                          }}
                           className="text-blue-600 hover:text-blue-900"
                         >
                           Edit
@@ -406,123 +429,34 @@ export default function AssetsPage() {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal with AssetForm */}
       {showModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-gray-900">
                 {editingAsset ? 'Edit Asset' : 'Add New Asset'}
               </h3>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingAsset(null);
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 ✕
               </button>
             </div>
             
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Asset Code *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.asset_code}
-                    onChange={(e) => setFormData({ ...formData, asset_code: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Asset Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.asset_name}
-                    onChange={(e) => setFormData({ ...formData, asset_name: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Category</label>
-                  <select
-                    value={formData.category_id}
-                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.icon} {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Under Maintenance">Under Maintenance</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Purchase Date</label>
-                  <input
-                    type="date"
-                    value={formData.purchase_date}
-                    onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Purchase Amount</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.purchase_amount}
-                    onChange={(e) => setFormData({ ...formData, purchase_amount: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    rows={3}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  {editingAsset ? 'Update' : 'Save'}
-                </button>
-              </div>
-            </form>
+            <AssetForm
+              initialData={prepareInitialData(editingAsset)}
+              onSubmit={editingAsset ? handleUpdateAsset : handleCreateAsset}
+              onCancel={() => {
+                setShowModal(false);
+                setEditingAsset(null);
+              }}
+              isEditing={!!editingAsset}
+            />
           </div>
         </div>
       )}
