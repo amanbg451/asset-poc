@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import DynamicFields from './DynamicFields';
 
 interface Category {
   id: number;
@@ -58,6 +59,7 @@ interface AssetFormData {
   
   // Other
   description: string;
+  custom_fields?: Record<string, any>;
 }
 
 interface AssetFormProps {
@@ -81,6 +83,7 @@ export default function AssetForm({ initialData, onSubmit, onCancel, isEditing }
   const [departments, setDepartments] = useState<Department[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customFields, setCustomFields] = useState<Record<string, any>>(initialData?.custom_fields || {});
   
   const [formData, setFormData] = useState<AssetFormData>({
     asset_code: '',
@@ -110,6 +113,7 @@ export default function AssetForm({ initialData, onSubmit, onCancel, isEditing }
     photos: '',
     videos: '',
     description: '',
+    custom_fields: {},
   });
 
   useEffect(() => {
@@ -119,6 +123,9 @@ export default function AssetForm({ initialData, onSubmit, onCancel, isEditing }
     
     if (initialData) {
       setFormData(prev => ({ ...prev, ...initialData }));
+      if (initialData.custom_fields) {
+        setCustomFields(initialData.custom_fields);
+      }
     }
   }, [initialData]);
 
@@ -158,9 +165,17 @@ export default function AssetForm({ initialData, onSubmit, onCancel, isEditing }
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleCustomFieldChange = (key: string, value: any) => {
+    setCustomFields(prev => ({ ...prev, [key]: value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+    const submitData = {
+      ...formData,
+      custom_fields: customFields,
+    };
+    await onSubmit(submitData);
   };
 
   if (loading) {
@@ -449,6 +464,12 @@ export default function AssetForm({ initialData, onSubmit, onCancel, isEditing }
           </div>
         </div>
       </div>
+
+      {/* Dynamic Custom Fields Section */}
+      <DynamicFields 
+        values={customFields} 
+        onChange={handleCustomFieldChange} 
+      />
 
       {/* Description Section */}
       <div className="bg-white rounded-lg shadow p-6">

@@ -17,6 +17,8 @@ const menuItems = [
   { name: 'Departments', href: '/departments', icon: '🏢' },
   { name: 'Categories', href: '/categories', icon: '🏷️' },
   { name: 'My Assets', href: '/my-assets', icon: '👤' },
+  // Add to menuItems array
+{ name: 'Custom Fields', href: '/admin/custom-fields', icon: '⚙️' },
 ];
 
 export default function Sidebar() {

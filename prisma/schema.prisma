@@ -54,6 +54,7 @@ model Asset {
   current_asset_value   Float?
   salvage_value         Float?
   depreciation          String?
+  customFieldValues CustomFieldValue[]
   
   // Media (JSON arrays)
   photos                String?   // Comma-separated URLs or JSON
@@ -151,4 +152,35 @@ model Category {
   assets     Asset[]
   
   @@map("categories")
+}
+
+model CustomField {
+  id            Int      @id @default(autoincrement())
+  field_key     String   @unique
+  field_label   String
+  field_type    String   // text, number, date, dropdown, checkbox, textarea, url
+  field_options String?  // For dropdown: comma-separated values
+  section       String?
+  is_required   Boolean  @default(false)
+  display_order Int      @default(0)
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  @@map("custom_fields")
+}
+
+model CustomFieldValue {
+  id         Int      @id @default(autoincrement())
+  asset_id   Int
+  field_key  String
+  field_value String?  // For text, number, date, url
+  field_value_json Json? // For complex values like checkbox (true/false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  
+  asset      Asset    @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  
+  @@unique([asset_id, field_key])
+  @@map("custom_field_values")
 }
