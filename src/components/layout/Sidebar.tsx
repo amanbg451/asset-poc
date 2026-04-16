@@ -16,6 +16,7 @@ const menuItems = [
   { name: 'Asset Locations', href: '/locations', icon: '📍' },
   { name: 'Departments', href: '/departments', icon: '🏢' },
   { name: 'Categories', href: '/categories', icon: '🏷️' },
+  { name: 'My Assets', href: '/my-assets', icon: '👤' },
 ];
 
 export default function Sidebar() {
