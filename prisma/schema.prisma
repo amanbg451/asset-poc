@@ -35,6 +35,8 @@ model Asset {
   description    String?
   location_id    Int?
   location       Location? @relation(fields: [location_id], references: [id])
+  department_id Int?
+  department    Department? @relation(fields: [department_id], references: [id])
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   
@@ -71,4 +73,17 @@ model Location {
   
   @@unique([name, parent_id])
   @@map("locations")
+}
+
+model Department {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  code       String?  @unique
+  description String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  
+  assets     Asset[]
+  
+  @@map("departments")
 }

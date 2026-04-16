@@ -14,6 +14,7 @@ const menuItems = [
   { name: 'Audit List', href: '/audit-list', icon: '📝' },
   { name: 'Asset Report', href: '/asset-report', icon: '📄' },
   { name: 'Asset Locations', href: '/locations', icon: '📍' },
+  { name: 'Departments', href: '/departments', icon: '🏢' },
 ];
 
 export default function Sidebar() {
