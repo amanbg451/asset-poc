@@ -1,10 +1,10 @@
-// src/modules/auth/auth.controller.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { handleError } from '@/common/middleware/error.middleware';
 import { AuthService } from './auth.service';
 import { validateLogin, validateRegister } from './auth.validators';
 import { UnauthorizedError, ConflictError } from '@/common/errors';
 import { env } from '@/config';
+import { getSession } from '@/lib/auth';
 
 const authService = new AuthService();
 
@@ -21,18 +21,17 @@ export class AuthController {
       const { email, password } = result.data;
       const loginResult = await authService.login({ email, password });
       
-      // Create response with HTTP-only cookie
       const response = NextResponse.json({
         success: true,
         user: loginResult.user,
+        refreshToken: loginResult.refreshToken,
       });
       
-      // Set HTTP-only cookie (more secure than localStorage)
       response.cookies.set('token', loginResult.token, {
         httpOnly: true,
         secure: env.isProduction,
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
         path: '/',
       });
       
@@ -63,13 +62,12 @@ export class AuthController {
         role: role || 'employee' 
       });
       
-      // Create response with HTTP-only cookie
       const response = NextResponse.json({
         success: true,
         user: registerResult.user,
+        refreshToken: registerResult.refreshToken,
       }, { status: 201 });
       
-      // Set HTTP-only cookie
       response.cookies.set('token', registerResult.token, {
         httpOnly: true,
         secure: env.isProduction,
@@ -88,15 +86,26 @@ export class AuthController {
     }
   }
 
-  static async logout() {
-    const response = NextResponse.json({ success: true });
-    
-    response.cookies.set('token', '', {
-      httpOnly: true,
-      expires: new Date(0),
-      path: '/',
-    });
-    
-    return response;
+  static async logout(request: NextRequest) {
+    try {
+      const session = await getSession();
+      
+      if (session?.userId) {
+        await authService.revokeAllUserRefreshTokens(session.userId);
+      }
+      
+      const response = NextResponse.json({ success: true });
+      
+      response.cookies.set('token', '', {
+        httpOnly: true,
+        expires: new Date(0),
+        path: '/',
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Logout error:', error);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
   }
 }

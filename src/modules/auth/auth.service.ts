@@ -1,8 +1,8 @@
-// src/modules/auth/auth.service.ts
 import prisma from '@/lib/prisma';
 import { comparePassword, generateToken } from '@/lib/auth';
-import { LoginInput, RegisterInput, AuthResponse, UserPayload } from './auth.types';
+import { LoginInput, RegisterInput, AuthResponse } from './auth.types';
 import { logger } from '@/common/utils';
+import crypto from 'crypto';
 
 export class AuthService {
   async login(input: LoginInput): Promise<AuthResponse> {
@@ -23,13 +23,18 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
     
-    const token = generateToken(user.id, user.email, user.role);
+    // Generate access token (7 days)
+    const accessToken = generateToken(user.id, user.email, user.role);
+    
+    // Generate refresh token (30 days)
+    const refreshToken = await this.generateRefreshToken(user.id);
     
     logger.info('Login successful', { userId: user.id, email: user.email });
     
     return {
       success: true,
-      token,
+      token: accessToken,
+      refreshToken: refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -63,13 +68,15 @@ export class AuthService {
       },
     });
     
-    const token = generateToken(user.id, user.email, user.role);
+    const accessToken = generateToken(user.id, user.email, user.role);
+    const refreshToken = await this.generateRefreshToken(user.id);
     
     logger.info('Registration successful', { userId: user.id, email: user.email });
     
     return {
       success: true,
-      token,
+      token: accessToken,
+      refreshToken: refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -79,16 +86,65 @@ export class AuthService {
     };
   }
 
-  async getCurrentUser(userId: number): Promise<UserPayload | null> {
-    const user = await prisma.user.findUnique({
+  async generateRefreshToken(userId: number): Promise<string> {
+    const token = crypto.randomBytes(40).toString('hex');
+    
+    await prisma.refreshToken.create({
+      data: {
+        token: token,
+        user_id: userId,
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+    
+    return token;
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string } | null> {
+    const storedToken = await prisma.refreshToken.findFirst({
+      where: {
+        token: refreshToken,
+        revoked: false,
+        expires_at: { gt: new Date() },
+      },
+      include: { user: true },
+    });
+    
+    if (!storedToken) {
+      logger.warn('Refresh token invalid or expired');
+      return null;
+    }
+    
+    const accessToken = generateToken(
+      storedToken.user.id,
+      storedToken.user.email,
+      storedToken.user.role
+    );
+    
+    logger.info('Access token refreshed', { userId: storedToken.user.id });
+    
+    return { accessToken };
+  }
+
+  async revokeAllUserRefreshTokens(userId: number): Promise<void> {
+    await prisma.refreshToken.updateMany({
+      where: { user_id: userId },
+      data: { revoked: true },
+    });
+    
+    logger.info('All refresh tokens revoked', { userId });
+  }
+
+  async getCurrentUser(userId: number) {
+    return await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
+        created_at: true,
       },
     });
-    
-    return user;
   }
 }

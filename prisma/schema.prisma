@@ -17,6 +17,7 @@ model User {
   
   createdAssets Asset[] @relation("CreatedBy")
   assignedAssets Asset[] @relation("AssignedTo")
+  refreshTokens RefreshToken[]  // ← NEW: Link to refresh tokens
   
   @@map("users")
 }
@@ -39,4 +40,18 @@ model Asset {
   createdByUser  User?     @relation("CreatedBy", fields: [created_by], references: [id])
   
   @@map("assets")
+}
+
+// ← NEW: Refresh Token model
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  user_id    Int
+  expires_at DateTime
+  created_at DateTime @default(now())
+  revoked    Boolean  @default(false)
+  
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  @@map("refresh_tokens")
 }

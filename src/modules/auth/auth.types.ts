@@ -1,12 +1,19 @@
-// src/modules/auth/auth.types.ts
-import { LoginInput, RegisterInput } from './auth.validators';
+export interface LoginInput {
+  email: string;
+  password: string;
+}
 
-// Re-export Zod inferred types
-export type { LoginInput, RegisterInput };
+export interface RegisterInput {
+  email: string;
+  password: string;
+  name?: string;
+  role?: string;
+}
 
 export interface AuthResponse {
   success: boolean;
   token: string;
+  refreshToken: string;
   user: {
     id: number;
     email: string;
