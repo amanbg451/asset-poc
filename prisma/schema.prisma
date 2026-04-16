@@ -26,22 +26,26 @@ model Asset {
   id             Int       @id @default(autoincrement())
   asset_code     String    @unique
   asset_name     String
-  category       String?
   status         String    @default("Active")
   purchase_date  DateTime?
   purchase_amount Float?
   assigned_to    Int?
+  assigned_date  DateTime?
+  expected_return DateTime?
+  assigned_notes String?
   created_by     Int?
   description    String?
   location_id    Int?
-  location       Location? @relation(fields: [location_id], references: [id])
-  department_id Int?
-  department    Department? @relation(fields: [department_id], references: [id])
+  department_id  Int?
+  category_id    Int?
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   
-  assignedUser   User?     @relation("AssignedTo", fields: [assigned_to], references: [id])
-  createdByUser  User?     @relation("CreatedBy", fields: [created_by], references: [id])
+  location       Location?   @relation(fields: [location_id], references: [id])
+  department     Department? @relation(fields: [department_id], references: [id])
+  category       Category?   @relation(fields: [category_id], references: [id])
+  assignedUser   User?       @relation("AssignedTo", fields: [assigned_to], references: [id])
+  createdByUser  User?       @relation("CreatedBy", fields: [created_by], references: [id])
   
   @@map("assets")
 }
@@ -86,4 +90,18 @@ model Department {
   assets     Asset[]
   
   @@map("departments")
+}
+
+model Category {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  code       String?  @unique
+  description String?
+  icon       String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  
+  assets     Asset[]
+  
+  @@map("categories")
 }

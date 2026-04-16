@@ -23,6 +23,17 @@ const getAssetsHandler = async (request: NextRequest) => {
   logger.info('Fetching assets', { userId: session.userId });
   
   const assets = await prisma.asset.findMany({
+    include: {
+      category: true,
+      assignedUser: {  // ← Include assigned user details
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        }
+      }
+    },
     orderBy: { created_at: 'desc' },
   });
   
@@ -43,7 +54,7 @@ const postAssetsHandler = async (request: NextRequest) => {
   }
   
   const body = await request.json();
-  const { asset_code, asset_name, category, status, purchase_date, purchase_amount, description } = body;
+  const { asset_code, asset_name, category_id, status, purchase_date, purchase_amount, description } = body;
   
   if (!asset_code || !asset_name) {
     return NextResponse.json({ 
@@ -73,7 +84,7 @@ const postAssetsHandler = async (request: NextRequest) => {
     data: {
       asset_code,
       asset_name,
-      category: category || null,
+      category_id: category_id || null,
       status: status || 'Active',
       purchase_date: purchase_date ? new Date(purchase_date) : null,
       purchase_amount: purchase_amount ? parseFloat(purchase_amount) : null,

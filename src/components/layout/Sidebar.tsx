@@ -15,6 +15,7 @@ const menuItems = [
   { name: 'Asset Report', href: '/asset-report', icon: '📄' },
   { name: 'Asset Locations', href: '/locations', icon: '📍' },
   { name: 'Departments', href: '/departments', icon: '🏢' },
+  { name: 'Categories', href: '/categories', icon: '🏷️' },
 ];
 
 export default function Sidebar() {
@@ -24,7 +25,6 @@ export default function Sidebar() {
     <aside className="w-64 bg-gray-900 text-white flex flex-col h-screen sticky top-0">
       <div className="p-4 border-b border-gray-800">
         <h1 className="text-xl font-bold">Asset Management</h1>
-        <p className="text-xs text-gray-400 mt-1">Enterprise System</p>
       </div>
       
       <nav className="flex-1 overflow-y-auto py-4">
@@ -47,7 +47,7 @@ export default function Sidebar() {
         ))}
       </nav>
       
-      <div className="p-4 border-t border-gray-800">
+      {/* <div className="p-4 border-t border-gray-800">
         <div className="flex items-center">
           <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
             <span className="text-sm font-bold">A</span>
@@ -57,7 +57,7 @@ export default function Sidebar() {
             <p className="text-xs text-gray-400">admin@example.com</p>
           </div>
         </div>
-      </div>
+      </div> */}
     </aside>
   );
 }
