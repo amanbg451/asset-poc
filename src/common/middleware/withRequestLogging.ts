@@ -3,13 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logRequest } from './request-logger.middleware';
 import { getSession } from '@/lib/auth';
 
-type ApiHandler = (request: NextRequest) => Promise<NextResponse>;
+type ApiHandler = (request: NextRequest, context?: any) => Promise<NextResponse>;
 
 export function withRequestLogging(handler: ApiHandler, endpointName: string): ApiHandler {
-  return async (request: NextRequest) => {
+  return async (request: NextRequest, context?: any) => {
     const startTime = Date.now();
     
-    // Get user ID if authenticated
     let userId: number | undefined;
     try {
       const session = await getSession();
@@ -19,11 +18,10 @@ export function withRequestLogging(handler: ApiHandler, endpointName: string): A
     }
     
     try {
-      const response = await handler(request);
+      const response = await handler(request, context);
       await logRequest(request, response, startTime, userId);
       return response;
     } catch (error) {
-      // Create error response
       const errorResponse = NextResponse.json(
         { error: 'Internal server error' },
         { status: 500 }

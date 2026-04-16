@@ -13,6 +13,7 @@ const menuItems = [
   { name: 'Maintenance', href: '/maintenance', icon: '🔧' },
   { name: 'Audit List', href: '/audit-list', icon: '📝' },
   { name: 'Asset Report', href: '/asset-report', icon: '📄' },
+  { name: 'Asset Locations', href: '/locations', icon: '📍' },
 ];
 
 export default function Sidebar() {

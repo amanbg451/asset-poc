@@ -17,7 +17,7 @@ model User {
   
   createdAssets Asset[] @relation("CreatedBy")
   assignedAssets Asset[] @relation("AssignedTo")
-  refreshTokens RefreshToken[]  // ← NEW: Link to refresh tokens
+  refreshTokens RefreshToken[]
   
   @@map("users")
 }
@@ -33,6 +33,8 @@ model Asset {
   assigned_to    Int?
   created_by     Int?
   description    String?
+  location_id    Int?
+  location       Location? @relation(fields: [location_id], references: [id])
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   
@@ -42,7 +44,6 @@ model Asset {
   @@map("assets")
 }
 
-// ← NEW: Refresh Token model
 model RefreshToken {
   id         Int      @id @default(autoincrement())
   token      String   @unique
@@ -54,4 +55,20 @@ model RefreshToken {
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   
   @@map("refresh_tokens")
+}
+
+model Location {
+  id           Int      @id @default(autoincrement())
+  name         String
+  company      String?  @default("LeadTech")
+  parent_id    Int?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  
+  parent       Location? @relation("ParentChild", fields: [parent_id], references: [id])
+  children     Location[] @relation("ParentChild")
+  assets       Asset[]
+  
+  @@unique([name, parent_id])
+  @@map("locations")
 }
