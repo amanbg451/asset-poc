@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import type { Variants } from "framer-motion";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   BarChart3,
@@ -27,6 +28,7 @@ export default function App() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const { scrollYProgress } = useScroll();
+  const router = useRouter();
   const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
@@ -252,7 +254,8 @@ export default function App() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-5 py-2.5 text-gray-700 hover:text-[#b9392c] transition-colors relative group"
+                onClick={() => router.push("/login")}
+                className="px-5 py-2.5 text-gray-700 hover:text-[#b9392c] transition-colors relative group cursor-pointer"
               >
                 Login
                 <span className="absolute inset-0 border border-transparent group-hover:border-[#b9392c]/20 rounded-xl transition-all" />
@@ -307,7 +310,10 @@ export default function App() {
                     {item}
                   </a>
                 ))}
-                <button className="px-6 py-2.5 text-gray-700 hover:text-[#b9392c] transition-colors text-left">
+                <button
+                  onClick={() => router.push("/login")}
+                  className="px-6 py-2.5 text-gray-700 hover:text-[#b9392c] transition-colors text-left cursor-pointer"
+                >
                   Login
                 </button>
                 <button className="px-6 py-2.5 bg-gradient-to-r from-[#b9392c] to-[#8f2d22] text-white rounded-xl">

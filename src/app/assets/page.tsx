@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
-import AssetForm from '@/components/assets/AssetForm';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import MainLayout from "@/components/layout/MainLayout";
+import AssetForm from "@/components/assets/AssetForm";
 
 interface Category {
   id: number;
@@ -69,24 +69,24 @@ export default function AssetsPage() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [assignFormData, setAssignFormData] = useState({
-    userId: '',
-    assigned_date: new Date().toISOString().split('T')[0],
-    expected_return: '',
-    notes: '',
+    userId: "",
+    assigned_date: new Date().toISOString().split("T")[0],
+    expected_return: "",
+    notes: "",
   });
 
   useEffect(() => {
     async function checkAuthAndFetch() {
       try {
-        const checkAuth = await fetch('/api/users/me');
+        const checkAuth = await fetch("/api/users/me");
         if (!checkAuth.ok) {
-          router.push('/login');
+          router.push("/login");
           return;
         }
         await Promise.all([fetchAssets(), fetchCategories(), fetchUsers()]);
       } catch (error) {
-        console.error('Auth check error:', error);
-        router.push('/login');
+        console.error("Auth check error:", error);
+        router.push("/login");
       }
     }
 
@@ -95,13 +95,13 @@ export default function AssetsPage() {
 
   const fetchAssets = async () => {
     try {
-      const res = await fetch('/api/assets');
+      const res = await fetch("/api/assets");
       const data = await res.json();
       if (data.assets) {
         setAssets(data.assets);
       }
     } catch (error) {
-      console.error('Error fetching assets:', error);
+      console.error("Error fetching assets:", error);
     } finally {
       setLoading(false);
     }
@@ -109,25 +109,25 @@ export default function AssetsPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/categories');
+      const res = await fetch("/api/categories");
       const data = await res.json();
       if (data.categories) {
         setCategories(data.categories);
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error("Error fetching categories:", error);
     }
   };
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/users/list');
+      const res = await fetch("/api/users/list");
       const data = await res.json();
       if (data.users) {
         setUsers(data.users);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
     }
   };
 
@@ -137,8 +137,8 @@ export default function AssetsPage() {
 
     try {
       const res = await fetch(`/api/assets/${selectedAsset.id}/assign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: parseInt(assignFormData.userId),
           assigned_date: assignFormData.assigned_date,
@@ -151,116 +151,121 @@ export default function AssetsPage() {
         setShowAssignModal(false);
         setSelectedAsset(null);
         setAssignFormData({
-          userId: '',
-          assigned_date: new Date().toISOString().split('T')[0],
-          expected_return: '',
-          notes: '',
+          userId: "",
+          assigned_date: new Date().toISOString().split("T")[0],
+          expected_return: "",
+          notes: "",
         });
         fetchAssets();
-        alert('Asset assigned successfully!');
+        alert("Asset assigned successfully!");
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to assign asset');
+        alert(error.error || "Failed to assign asset");
       }
     } catch (error) {
-      console.error('Error assigning asset:', error);
-      alert('Connection failed');
+      console.error("Error assigning asset:", error);
+      alert("Connection failed");
     }
   };
 
   const handleUnassign = async (asset: Asset) => {
-    if (!confirm(`Unassign "${asset.asset_name}" from ${asset.assignedUser?.name || 'user'}?`)) return;
+    if (
+      !confirm(
+        `Unassign "${asset.asset_name}" from ${asset.assignedUser?.name || "user"}?`,
+      )
+    )
+      return;
 
     try {
       const res = await fetch(`/api/assets/${asset.id}/unassign`, {
-        method: 'POST',
+        method: "POST",
       });
 
       if (res.ok) {
         fetchAssets();
-        alert('Asset unassigned successfully!');
+        alert("Asset unassigned successfully!");
       } else {
-        alert('Failed to unassign asset');
+        alert("Failed to unassign asset");
       }
     } catch (error) {
-      console.error('Error unassigning asset:', error);
-      alert('Connection failed');
+      console.error("Error unassigning asset:", error);
+      alert("Connection failed");
     }
   };
 
   const handleCreateAsset = async (formData: any) => {
     try {
-      const res = await fetch('/api/assets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      
+
       if (res.ok) {
         setShowModal(false);
         fetchAssets();
-        alert('Asset created successfully!');
+        alert("Asset created successfully!");
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to create asset');
+        alert(error.error || "Failed to create asset");
       }
     } catch (error) {
-      console.error('Error creating asset:', error);
-      alert('Connection failed');
+      console.error("Error creating asset:", error);
+      alert("Connection failed");
     }
   };
 
   const handleUpdateAsset = async (formData: any) => {
     if (!editingAsset) return;
-    
+
     try {
       const res = await fetch(`/api/assets/${editingAsset.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      
+
       if (res.ok) {
         setShowModal(false);
         setEditingAsset(null);
         fetchAssets();
-        alert('Asset updated successfully!');
+        alert("Asset updated successfully!");
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to update asset');
+        alert(error.error || "Failed to update asset");
       }
     } catch (error) {
-      console.error('Error updating asset:', error);
-      alert('Connection failed');
+      console.error("Error updating asset:", error);
+      alert("Connection failed");
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this asset?')) return;
-    
+    if (!confirm("Are you sure you want to delete this asset?")) return;
+
     try {
       const res = await fetch(`/api/assets/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      
+
       if (res.ok) {
         fetchAssets();
       } else {
-        alert('Failed to delete asset');
+        alert("Failed to delete asset");
       }
     } catch (error) {
-      console.error('Error deleting asset:', error);
-      alert('Connection failed');
+      console.error("Error deleting asset:", error);
+      alert("Connection failed");
     }
   };
 
   const openAssignModal = (asset: Asset) => {
     setSelectedAsset(asset);
     setAssignFormData({
-      userId: asset.assigned_to?.toString() || '',
-      assigned_date: new Date().toISOString().split('T')[0],
-      expected_return: '',
-      notes: '',
+      userId: asset.assigned_to?.toString() || "",
+      assigned_date: new Date().toISOString().split("T")[0],
+      expected_return: "",
+      notes: "",
     });
     setShowAssignModal(true);
   };
@@ -270,31 +275,31 @@ export default function AssetsPage() {
     return {
       asset_code: asset.asset_code,
       asset_name: asset.asset_name,
-      installation_date: asset.installation_date?.split('T')[0] || '',
-      tagged_status: asset.tagged_status || 'Not Tagged',
-      commissioning_date: asset.commissioning_date?.split('T')[0] || '',
-      country: asset.country || 'India',
-      state: asset.state || '',
-      city: asset.city || '',
-      serial_no: asset.serial_no || '',
-      model: asset.model || '',
-      make: asset.make || '',
-      manufacturer: asset.manufacturer || '',
-      client_id: asset.client_id || '',
-      category_id: asset.category_id?.toString() || '',
-      department_id: asset.department_id?.toString() || '',
-      location_id: asset.location_id?.toString() || '',
+      installation_date: asset.installation_date?.split("T")[0] || "",
+      tagged_status: asset.tagged_status || "Not Tagged",
+      commissioning_date: asset.commissioning_date?.split("T")[0] || "",
+      country: asset.country || "India",
+      state: asset.state || "",
+      city: asset.city || "",
+      serial_no: asset.serial_no || "",
+      model: asset.model || "",
+      make: asset.make || "",
+      manufacturer: asset.manufacturer || "",
+      client_id: asset.client_id || "",
+      category_id: asset.category_id?.toString() || "",
+      department_id: asset.department_id?.toString() || "",
+      location_id: asset.location_id?.toString() || "",
       status: asset.status,
-      depreciation_period: asset.depreciation_period?.toString() || '',
-      asset_cost: asset.asset_cost?.toString() || '',
-      useful_life: asset.useful_life?.toString() || '',
-      purchase_date: asset.purchase_date?.split('T')[0] || '',
-      current_asset_value: asset.current_asset_value?.toString() || '',
-      salvage_value: asset.salvage_value?.toString() || '',
-      depreciation: asset.depreciation || '',
-      photos: asset.photos || '',
-      videos: asset.videos || '',
-      description: asset.description || '',
+      depreciation_period: asset.depreciation_period?.toString() || "",
+      asset_cost: asset.asset_cost?.toString() || "",
+      useful_life: asset.useful_life?.toString() || "",
+      purchase_date: asset.purchase_date?.split("T")[0] || "",
+      current_asset_value: asset.current_asset_value?.toString() || "",
+      salvage_value: asset.salvage_value?.toString() || "",
+      depreciation: asset.depreciation || "",
+      photos: asset.photos || "",
+      videos: asset.videos || "",
+      description: asset.description || "",
     };
   };
 
@@ -311,10 +316,10 @@ export default function AssetsPage() {
   const getCategoryName = (asset: Asset) => {
     if (asset.category) return asset.category.name;
     if (asset.category_id) {
-      const cat = categories.find(c => c.id === asset.category_id);
-      return cat?.name || '-';
+      const cat = categories.find((c) => c.id === asset.category_id);
+      return cat?.name || "-";
     }
-    return '-';
+    return "-";
   };
 
   return (
@@ -341,50 +346,79 @@ export default function AssetsPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asset Code</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asset Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Serial No.</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned To</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Asset Code
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Asset Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Serial No.
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Assigned To
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {assets.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                    <td
+                      colSpan={7}
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
                       No assets found. Click "Add Asset" to create one.
                     </td>
                   </tr>
                 ) : (
                   assets.map((asset) => (
                     <tr key={asset.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900">{asset.asset_code}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{asset.asset_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{asset.serial_no || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {asset.asset_code}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {asset.asset_name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {asset.serial_no || "-"}
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {getCategoryName(asset)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         {asset.assignedUser ? (
                           <div>
-                            <span className="font-medium">{asset.assignedUser.name}</span>
+                            <span className="font-medium">
+                              {asset.assignedUser.name}
+                            </span>
                             <br />
-                            <span className="text-xs text-gray-500">{asset.assignedUser.email}</span>
+                            <span className="text-xs text-gray-500">
+                              {asset.assignedUser.email}
+                            </span>
                           </div>
                         ) : (
                           <span className="text-gray-400">Unassigned</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          asset.status === 'Active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : asset.status === 'Inactive'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            asset.status === "Active"
+                              ? "bg-green-100 text-green-800"
+                              : asset.status === "Inactive"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
                           {asset.status}
                         </span>
                       </td>
@@ -397,6 +431,12 @@ export default function AssetsPage() {
                           className="text-blue-600 hover:text-blue-900"
                         >
                           Edit
+                        </button>
+                        <button
+                          onClick={() => router.push(`/assets/${asset.id}`)}
+                          className="text-purple-600 hover:text-purple-900"
+                        >
+                          QR
                         </button>
                         {asset.assignedUser ? (
                           <button
@@ -435,7 +475,7 @@ export default function AssetsPage() {
           <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-gray-900">
-                {editingAsset ? 'Edit Asset' : 'Add New Asset'}
+                {editingAsset ? "Edit Asset" : "Add New Asset"}
               </h3>
               <button
                 onClick={() => {
@@ -447,7 +487,7 @@ export default function AssetsPage() {
                 ✕
               </button>
             </div>
-            
+
             <AssetForm
               initialData={prepareInitialData(editingAsset)}
               onSubmit={editingAsset ? handleUpdateAsset : handleCreateAsset}
@@ -476,15 +516,22 @@ export default function AssetsPage() {
                 ✕
               </button>
             </div>
-            
+
             <form onSubmit={handleAssign}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Assign To *</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Assign To *
+                  </label>
                   <select
                     required
                     value={assignFormData.userId}
-                    onChange={(e) => setAssignFormData({ ...assignFormData, userId: e.target.value })}
+                    onChange={(e) =>
+                      setAssignFormData({
+                        ...assignFormData,
+                        userId: e.target.value,
+                      })
+                    }
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Select User</option>
@@ -495,39 +542,60 @@ export default function AssetsPage() {
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Assignment Date</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Assignment Date
+                  </label>
                   <input
                     type="date"
                     value={assignFormData.assigned_date}
-                    onChange={(e) => setAssignFormData({ ...assignFormData, assigned_date: e.target.value })}
+                    onChange={(e) =>
+                      setAssignFormData({
+                        ...assignFormData,
+                        assigned_date: e.target.value,
+                      })
+                    }
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Expected Return Date</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Expected Return Date
+                  </label>
                   <input
                     type="date"
                     value={assignFormData.expected_return}
-                    onChange={(e) => setAssignFormData({ ...assignFormData, expected_return: e.target.value })}
+                    onChange={(e) =>
+                      setAssignFormData({
+                        ...assignFormData,
+                        expected_return: e.target.value,
+                      })
+                    }
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Notes</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Notes
+                  </label>
                   <textarea
                     rows={3}
                     value={assignFormData.notes}
-                    onChange={(e) => setAssignFormData({ ...assignFormData, notes: e.target.value })}
+                    onChange={(e) =>
+                      setAssignFormData({
+                        ...assignFormData,
+                        notes: e.target.value,
+                      })
+                    }
                     placeholder="Optional notes about this assignment"
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
-              
+
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"

@@ -4,6 +4,7 @@ import { rateLimit } from '@/common/middleware/rate-limit.middleware';
 import { withRequestLogging } from '@/common/middleware/withRequestLogging';
 import { logger } from '@/common/utils';
 import { getSession } from '@/lib/auth';
+import { env } from '@/config';
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -122,6 +123,19 @@ const postAssetsHandler = async (request: NextRequest) => {
     asset_name: body.asset_name, 
     userId: session.userId 
   });
+  
+  // ============================================
+  // ADD THIS CODE HERE (after logger.info, before return)
+  // ============================================
+  // Generate QR code URL
+  const qrData = `${process.env.NEXTAUTH_URL}/assets/${asset.id}`;
+  
+  // Update asset with QR URL
+  await prisma.asset.update({
+    where: { id: asset.id },
+    data: { qr_url: qrData },
+  });
+  // ============================================
   
   return NextResponse.json({ 
     success: true, 
