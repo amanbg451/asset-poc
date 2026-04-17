@@ -194,26 +194,12 @@ export default function AssetsPage() {
   };
 
   const handleCreateAsset = async (formData: any) => {
-    try {
-      const res = await fetch("/api/assets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (res.ok) {
-        setShowModal(false);
-        fetchAssets();
-        alert("Asset created successfully!");
-      } else {
-        const error = await res.json();
-        alert(error.error || "Failed to create asset");
-      }
-    } catch (error) {
-      console.error("Error creating asset:", error);
-      alert("Connection failed");
-    }
-  };
+  // The AssetForm already handles asset creation and photo/video upload
+  // Just close the modal and refresh the list
+  setShowModal(false);
+  fetchAssets();
+  alert('Asset created successfully!');
+};
 
   const handleUpdateAsset = async (formData: any) => {
     if (!editingAsset) return;

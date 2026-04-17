@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
+import PhotoGallery from '@/components/assets/PhotoGallery';
 
 interface Asset {
   id: number;
@@ -11,6 +12,8 @@ interface Asset {
   asset_name: string;
   status: string;
   qr_url: string;
+  photos?: string;
+  videos?: string;  // ← ADDED
 }
 
 export default function AssetDetailPage() {
@@ -19,6 +22,7 @@ export default function AssetDetailPage() {
   const [asset, setAsset] = useState<Asset | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     fetchAsset();
@@ -30,6 +34,15 @@ export default function AssetDetailPage() {
       const data = await res.json();
       if (data.asset) {
         setAsset(data.asset);
+        // Parse photos from JSON string
+        if (data.asset.photos) {
+          try {
+            const parsedPhotos = JSON.parse(data.asset.photos);
+            setPhotos(parsedPhotos);
+          } catch {
+            setPhotos([]);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching asset:', error);
@@ -59,6 +72,12 @@ export default function AssetDetailPage() {
     }
   };
 
+  const handlePhotosUpdate = (newPhotos: string[]) => {
+    setPhotos(newPhotos);
+    // Refresh asset to update the photos in the database
+    fetchAsset();
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -81,7 +100,8 @@ export default function AssetDetailPage() {
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* QR Code and Basic Info Card */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {/* Header */}
           <div className="px-6 py-4 bg-gradient-to-r from-[#b9392c] to-[#8f2d22] text-white">
@@ -152,6 +172,30 @@ export default function AssetDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Photo Gallery Component */}
+        <PhotoGallery
+          assetId={asset.id}
+          photos={photos}
+          onPhotosUpdate={handlePhotosUpdate}
+        />
+
+        {/* Video Section - ADD THIS */}
+        {asset.videos && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+              Asset Video
+            </h2>
+            <video
+              src={asset.videos}
+              controls
+              className="w-full rounded-lg border"
+              style={{ maxHeight: '400px' }}
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        )}
       </div>
     </MainLayout>
   );
