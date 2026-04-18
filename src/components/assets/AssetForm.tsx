@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import DynamicFields from "./DynamicFields";
+import LocationPicker from "./LocationPicker";
 
 interface Category {
   id: number;
@@ -60,6 +61,9 @@ interface AssetFormData {
   // Other
   description: string;
   custom_fields?: Record<string, any>;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string;
 }
 
 interface AssetFormProps {
@@ -122,6 +126,12 @@ export default function AssetForm({
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  
+  // GPS Location states
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationAddress, setLocationAddress] = useState<string>('');
+  
   const [formData, setFormData] = useState<AssetFormData>({
     asset_code: "",
     asset_name: "",
@@ -163,6 +173,10 @@ export default function AssetForm({
       if (initialData.custom_fields) {
         setCustomFields(initialData.custom_fields);
       }
+      // Initialize location from initialData if available
+      if (initialData.latitude) setLatitude(initialData.latitude);
+      if (initialData.longitude) setLongitude(initialData.longitude);
+      if (initialData.address) setLocationAddress(initialData.address);
     }
   }, [initialData]);
 
@@ -239,103 +253,115 @@ export default function AssetForm({
     setVideoPreview(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setUploading(true);
-
-  try {
-    // Exclude photos and videos from main form data
-    const { photos, videos, ...restFormData } = formData;
-    const submitData = {
-      ...restFormData,
-      custom_fields: customFields,
-    };
-
-    let url: string;
-    let method: string;
-    let currentAssetId: number;
-
-    if (isEditing && assetId) {
-      // For EDIT: First upload photos, THEN update asset
-      currentAssetId = assetId;
-      
-      // Upload photos first
-      for (const photo of photoFiles) {
-        const formData = new FormData();
-        formData.append('photo', photo);
-        await fetch(`/api/assets/${currentAssetId}/upload-photo`, {
-          method: 'POST',
-          body: formData,
-        });
-      }
-      
-      // Upload video
-      if (videoFile) {
-        const formData = new FormData();
-        formData.append('video', videoFile);
-        await fetch(`/api/assets/${currentAssetId}/upload-video`, {
-          method: 'POST',
-          body: formData,
-        });
-      }
-      
-      // Then update the asset
-      url = `/api/assets/${assetId}`;
-      method = "PUT";
-    } else {
-      // For CREATE: First create asset, then upload photos
-      url = "/api/assets";
-      method = "POST";
-    }
-
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(submitData),
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || "Failed to save asset");
-    }
-
-    const result = await res.json();
-    
-    // For CREATE, get the new asset ID and upload photos
-    if (!isEditing) {
-      const newAssetId = result.asset.id;
-      
-      for (const photo of photoFiles) {
-        const formData = new FormData();
-        formData.append('photo', photo);
-        await fetch(`/api/assets/${newAssetId}/upload-photo`, {
-          method: 'POST',
-          body: formData,
-        });
-      }
-      
-      if (videoFile) {
-        const formData = new FormData();
-        formData.append('video', videoFile);
-        await fetch(`/api/assets/${newAssetId}/upload-video`, {
-          method: 'POST',
-          body: formData,
-        });
-      }
-    }
-
-    // Clear previews
-    photoPreviews.forEach((url) => URL.revokeObjectURL(url));
-    if (videoPreview) URL.revokeObjectURL(videoPreview);
-
-    onSubmit(result.asset);
-  } catch (error) {
-    console.error("Error saving asset:", error);
-    alert(error instanceof Error ? error.message : "Failed to save asset");
-  } finally {
-    setUploading(false);
-  }
+  const handleLocationSelect = (lat: number, lng: number, address: string) => {
+  console.log('Location selected:', { lat, lng, address });
+  setLatitude(lat);
+  setLongitude(lng);
+  setLocationAddress(address);
 };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploading(true);
+
+    try {
+      // Exclude photos and videos from main form data
+      const { photos, videos, ...restFormData } = formData;
+      const submitData = {
+        ...restFormData,
+        custom_fields: customFields,
+        latitude: latitude,
+        longitude: longitude,
+        address: locationAddress,
+      };
+
+      let url: string;
+      let method: string;
+      let currentAssetId: number;
+
+      if (isEditing && assetId) {
+        // For EDIT: First upload photos, THEN update asset
+        currentAssetId = assetId;
+        
+        // Upload photos first
+        for (const photo of photoFiles) {
+          const formData = new FormData();
+          formData.append('photo', photo);
+          await fetch(`/api/assets/${currentAssetId}/upload-photo`, {
+            method: 'POST',
+            body: formData,
+          });
+        }
+        
+        // Upload video
+        if (videoFile) {
+          const formData = new FormData();
+          formData.append('video', videoFile);
+          await fetch(`/api/assets/${currentAssetId}/upload-video`, {
+            method: 'POST',
+            body: formData,
+          });
+        }
+        
+        // Then update the asset
+        url = `/api/assets/${assetId}`;
+        method = "PUT";
+      } else {
+        // For CREATE: First create asset, then upload photos
+        url = "/api/assets";
+        method = "POST";
+      }
+
+      console.log('Submitting location data:', { latitude, longitude, address: locationAddress });
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submitData),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to save asset");
+      }
+
+      const result = await res.json();
+      
+      // For CREATE, get the new asset ID and upload photos
+      if (!isEditing) {
+        const newAssetId = result.asset.id;
+        
+        for (const photo of photoFiles) {
+          const formData = new FormData();
+          formData.append('photo', photo);
+          await fetch(`/api/assets/${newAssetId}/upload-photo`, {
+            method: 'POST',
+            body: formData,
+          });
+        }
+        
+        if (videoFile) {
+          const formData = new FormData();
+          formData.append('video', videoFile);
+          await fetch(`/api/assets/${newAssetId}/upload-video`, {
+            method: 'POST',
+            body: formData,
+          });
+        }
+      }
+
+      // Clear previews
+      photoPreviews.forEach((url) => URL.revokeObjectURL(url));
+      if (videoPreview) URL.revokeObjectURL(videoPreview);
+
+      onSubmit(result.asset);
+    } catch (error) {
+      console.error("Error saving asset:", error);
+      alert(error instanceof Error ? error.message : "Failed to save asset");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (loading) {
     return <div className="text-center py-8">Loading form data...</div>;
@@ -798,6 +824,18 @@ export default function AssetForm({
             </button>
           </div>
         )}
+      </div>
+
+      {/* GPS Location Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+          📍 GPS Location
+        </h2>
+        <LocationPicker
+          latitude={latitude}
+          longitude={longitude}
+          onLocationSelect={handleLocationSelect}
+        />
       </div>
 
       {/* Description Section */}

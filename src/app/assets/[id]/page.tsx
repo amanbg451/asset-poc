@@ -14,7 +14,10 @@ interface Asset {
   status: string;
   qr_url: string;
   photos?: string;
-  videos?: string; // ← ADDED
+  videos?: string; 
+  latitude?: number;   
+  longitude?: number;  
+  address?: string;    
 }
 
 export default function AssetDetailPage() {
@@ -228,6 +231,38 @@ export default function AssetDetailPage() {
             >
               Your browser does not support the video tag.
             </video>
+          </div>
+        )}
+
+        {asset.latitude && asset.longitude && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+              📍 Asset Location
+            </h2>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Coordinates:</span>
+                <br />
+                Latitude: {asset.latitude}
+                <br />
+                Longitude: {asset.longitude}
+              </p>
+              {asset.address && (
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Address:</span>
+                  <br />
+                  {asset.address}
+                </p>
+              )}
+              <a
+                href={`https://www.openstreetmap.org/?mlat=${asset.latitude}&mlon=${asset.longitude}#map=15/${asset.latitude}/${asset.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 text-blue-600 hover:text-blue-800 text-sm"
+              >
+                View on Map →
+              </a>
+            </div>
           </div>
         )}
 
