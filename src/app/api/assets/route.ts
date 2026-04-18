@@ -4,7 +4,10 @@ import { rateLimit } from '@/common/middleware/rate-limit.middleware';
 import { withRequestLogging } from '@/common/middleware/withRequestLogging';
 import { logger } from '@/common/utils';
 import { getSession } from '@/lib/auth';
+import { AuditService } from '@/modules/audit/audit.service';
 import { env } from '@/config';
+
+const auditService = new AuditService();
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -117,6 +120,19 @@ const postAssetsHandler = async (request: NextRequest) => {
       created_by: session.userId,
     },
   });
+
+  // After asset is created, add audit log
+await auditService.log(
+  asset.id,
+  'CREATE',
+  {
+    additionalDetails: {
+      asset_code: asset.asset_code,
+      asset_name: asset.asset_name,
+    },
+  },
+  request
+);
   
   logger.info('Creating new asset', { 
     asset_code: body.asset_code, 

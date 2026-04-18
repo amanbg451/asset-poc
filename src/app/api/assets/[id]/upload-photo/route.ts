@@ -4,6 +4,9 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { AuditService } from '@/modules/audit/audit.service';
+
+const auditService = new AuditService();
 
 export async function POST(
   request: NextRequest,
@@ -71,6 +74,21 @@ export async function POST(
       where: { id: assetId },
       data: { photos: JSON.stringify(newPhotos) },
     });
+
+    // Add audit log for photo upload
+    await auditService.log(
+      assetId,
+      'PHOTO_ADD',
+      {
+        fieldName: 'photos',
+        newValue: publicUrl,
+        additionalDetails: { 
+          photoCount: newPhotos.length,
+          fileName: filename
+        }
+      },
+      request
+    );
 
     return NextResponse.json({
       success: true,

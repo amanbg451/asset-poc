@@ -3,6 +3,9 @@ import prisma from '@/lib/prisma';
 import { rateLimit } from '@/common/middleware/rate-limit.middleware';
 import { logger } from '@/common/utils';
 import { getSession } from '@/lib/auth';
+import { AuditService } from '@/modules/audit/audit.service';
+
+const auditService = new AuditService();
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -93,12 +96,12 @@ export async function PUT(
     
     const body = await request.json();
     
-    // Check if asset exists
-    const existingAsset = await prisma.asset.findUnique({
+    // Get old asset values BEFORE update
+    const oldAsset = await prisma.asset.findUnique({
       where: { id: assetId },
     });
     
-    if (!existingAsset) {
+    if (!oldAsset) {
       return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
     }
     
@@ -147,6 +150,69 @@ export async function PUT(
         description: body.description,
       },
     });
+    
+    // LOG CHANGES - Compare old and new values
+    const changes: { field: string; old: any; new: any }[] = [];
+    
+    if (oldAsset.asset_name !== asset.asset_name) {
+      changes.push({ field: 'asset_name', old: oldAsset.asset_name, new: asset.asset_name });
+    }
+    if (oldAsset.status !== asset.status) {
+      changes.push({ field: 'status', old: oldAsset.status, new: asset.status });
+    }
+    if (oldAsset.location_id !== asset.location_id) {
+      changes.push({ field: 'location_id', old: oldAsset.location_id, new: asset.location_id });
+    }
+    if (oldAsset.department_id !== asset.department_id) {
+      changes.push({ field: 'department_id', old: oldAsset.department_id, new: asset.department_id });
+    }
+    if (oldAsset.category_id !== asset.category_id) {
+      changes.push({ field: 'category_id', old: oldAsset.category_id, new: asset.category_id });
+    }
+    if (oldAsset.serial_no !== asset.serial_no) {
+      changes.push({ field: 'serial_no', old: oldAsset.serial_no, new: asset.serial_no });
+    }
+    if (oldAsset.model !== asset.model) {
+      changes.push({ field: 'model', old: oldAsset.model, new: asset.model });
+    }
+    if (oldAsset.make !== asset.make) {
+      changes.push({ field: 'make', old: oldAsset.make, new: asset.make });
+    }
+    if (oldAsset.manufacturer !== asset.manufacturer) {
+      changes.push({ field: 'manufacturer', old: oldAsset.manufacturer, new: asset.manufacturer });
+    }
+    if (oldAsset.asset_cost !== asset.asset_cost) {
+      changes.push({ field: 'asset_cost', old: oldAsset.asset_cost, new: asset.asset_cost });
+    }
+    if (oldAsset.current_asset_value !== asset.current_asset_value) {
+      changes.push({ field: 'current_asset_value', old: oldAsset.current_asset_value, new: asset.current_asset_value });
+    }
+    if (oldAsset.depreciation_period !== asset.depreciation_period) {
+      changes.push({ field: 'depreciation_period', old: oldAsset.depreciation_period, new: asset.depreciation_period });
+    }
+    if (oldAsset.useful_life !== asset.useful_life) {
+      changes.push({ field: 'useful_life', old: oldAsset.useful_life, new: asset.useful_life });
+    }
+    if (oldAsset.assigned_to !== asset.assigned_to) {
+      changes.push({ field: 'assigned_to', old: oldAsset.assigned_to, new: asset.assigned_to });
+    }
+    if (oldAsset.description !== asset.description) {
+      changes.push({ field: 'description', old: oldAsset.description, new: asset.description });
+    }
+    
+    // Only log if there are actual changes
+    for (const change of changes) {
+      await auditService.log(
+        assetId,
+        'UPDATE',
+        {
+          fieldName: change.field,
+          oldValue: change.old,
+          newValue: change.new,
+        },
+        request
+      );
+    }
     
     return NextResponse.json({ success: true, asset });
   } catch (error) {

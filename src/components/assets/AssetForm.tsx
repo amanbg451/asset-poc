@@ -67,6 +67,7 @@ interface AssetFormProps {
   onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
   isEditing?: boolean;
+  assetId?: number;
 }
 
 const countries = [
@@ -107,6 +108,7 @@ export default function AssetForm({
   onSubmit,
   onCancel,
   isEditing,
+  assetId,
 }: AssetFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -115,7 +117,6 @@ export default function AssetForm({
   const [customFields, setCustomFields] = useState<Record<string, any>>(
     initialData?.custom_fields || {},
   );
-  // Add these after const [customFields, setCustomFields] = useState...
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -209,24 +210,20 @@ export default function AssetForm({
     setCustomFields((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Handle photo selection
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setPhotoFiles((prev) => [...prev, ...files]);
 
-    // Create preview URLs
     const newPreviews = files.map((file) => URL.createObjectURL(file));
     setPhotoPreviews((prev) => [...prev, ...newPreviews]);
   };
 
-  // Remove a photo
   const removePhoto = (index: number) => {
     URL.revokeObjectURL(photoPreviews[index]);
     setPhotoFiles((prev) => prev.filter((_, i) => i !== index));
     setPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Handle video selection
   const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -236,45 +233,37 @@ export default function AssetForm({
     }
   };
 
-  // Remove video
   const removeVideo = () => {
     if (videoPreview) URL.revokeObjectURL(videoPreview);
     setVideoFile(null);
     setVideoPreview(null);
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setUploading(true);
-  
+
   try {
-    // Create asset FIRST
+    // Exclude photos and videos from main form data
+    const { photos, videos, ...restFormData } = formData;
     const submitData = {
-      ...formData,
+      ...restFormData,
       custom_fields: customFields,
     };
-    
-    const res = await fetch('/api/assets', {
-      method: isEditing ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(submitData),
-    });
-    
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Failed to save asset');
-    }
-    
-    const result = await res.json();
-    const assetId = result.asset.id;
-    
-    // THEN upload photos and video (only for new assets, not for edit)
-    if (!isEditing) {
-      // Upload photos
+
+    let url: string;
+    let method: string;
+    let currentAssetId: number;
+
+    if (isEditing && assetId) {
+      // For EDIT: First upload photos, THEN update asset
+      currentAssetId = assetId;
+      
+      // Upload photos first
       for (const photo of photoFiles) {
         const formData = new FormData();
         formData.append('photo', photo);
-        await fetch(`/api/assets/${assetId}/upload-photo`, {
+        await fetch(`/api/assets/${currentAssetId}/upload-photo`, {
           method: 'POST',
           body: formData,
         });
@@ -284,19 +273,65 @@ export default function AssetForm({
       if (videoFile) {
         const formData = new FormData();
         formData.append('video', videoFile);
-        await fetch(`/api/assets/${assetId}/upload-video`, {
+        await fetch(`/api/assets/${currentAssetId}/upload-video`, {
+          method: 'POST',
+          body: formData,
+        });
+      }
+      
+      // Then update the asset
+      url = `/api/assets/${assetId}`;
+      method = "PUT";
+    } else {
+      // For CREATE: First create asset, then upload photos
+      url = "/api/assets";
+      method = "POST";
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(submitData),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to save asset");
+    }
+
+    const result = await res.json();
+    
+    // For CREATE, get the new asset ID and upload photos
+    if (!isEditing) {
+      const newAssetId = result.asset.id;
+      
+      for (const photo of photoFiles) {
+        const formData = new FormData();
+        formData.append('photo', photo);
+        await fetch(`/api/assets/${newAssetId}/upload-photo`, {
+          method: 'POST',
+          body: formData,
+        });
+      }
+      
+      if (videoFile) {
+        const formData = new FormData();
+        formData.append('video', videoFile);
+        await fetch(`/api/assets/${newAssetId}/upload-video`, {
           method: 'POST',
           body: formData,
         });
       }
     }
-    
-    // Call the parent onSubmit
+
+    // Clear previews
+    photoPreviews.forEach((url) => URL.revokeObjectURL(url));
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+
     onSubmit(result.asset);
-    
   } catch (error) {
-    console.error('Error saving asset:', error);
-    alert(error instanceof Error ? error.message : 'Failed to save asset');
+    console.error("Error saving asset:", error);
+    alert(error instanceof Error ? error.message : "Failed to save asset");
   } finally {
     setUploading(false);
   }
@@ -797,8 +832,9 @@ export default function AssetForm({
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          disabled={uploading}
         >
-          {isEditing ? "Update Asset" : "Save Asset"}
+          {uploading ? "Saving..." : isEditing ? "Update Asset" : "Save Asset"}
         </button>
       </div>
     </form>

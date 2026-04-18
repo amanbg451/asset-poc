@@ -4,6 +4,9 @@ import { unlink } from 'fs/promises';
 import path from 'path';
 import { getSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { AuditService } from '@/modules/audit/audit.service';
+
+const auditService = new AuditService();
 
 export async function DELETE(
   request: NextRequest,
@@ -36,6 +39,21 @@ export async function DELETE(
         where: { id: assetId },
         data: { videos: null },
       });
+
+      // Add audit log for video delete
+      await auditService.log(
+        assetId,
+        'VIDEO_DELETE',
+        {
+          fieldName: 'videos',
+          oldValue: asset.videos,
+          newValue: null,
+          additionalDetails: { 
+            deletedVideoUrl: asset.videos
+          }
+        },
+        request
+      );
     }
 
     return NextResponse.json({ success: true });

@@ -482,6 +482,7 @@ export default function AssetsPage() {
                 setEditingAsset(null);
               }}
               isEditing={!!editingAsset}
+              assetId={editingAsset?.id}  
             />
           </div>
         </div>

@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logger } from '@/common/utils';
+import { AuditService } from '@/modules/audit/audit.service';
+
+const auditService = new AuditService();
 
 export async function POST(
   request: NextRequest,
@@ -56,6 +59,24 @@ export async function POST(
         }
       }
     });
+
+    await auditService.log(
+  assetId,
+  'ASSIGN',
+  {
+    fieldName: 'assigned_to',
+    oldValue: null,
+    newValue: userId,
+    additionalDetails: {
+      assignedToUser: user.name,
+      assignedToEmail: user.email,
+      assignedDate: assigned_date,
+      expectedReturn: expected_return,
+      notes: notes
+    }
+  },
+  request
+);
     
     logger.info('Asset assigned', { 
       assetId, 

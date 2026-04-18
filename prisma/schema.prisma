@@ -18,6 +18,7 @@ model User {
   createdAssets Asset[] @relation("CreatedBy")
   assignedAssets Asset[] @relation("AssignedTo")
   refreshTokens RefreshToken[]
+  auditLogs    AuditLog[]
   
   @@map("users")
 }
@@ -55,6 +56,7 @@ model Asset {
   salvage_value         Float?
   depreciation          String?
   customFieldValues CustomFieldValue[]
+  auditLogs    AuditLog[]
   
   // Media (JSON arrays)
   photos                String?   // Comma-separated URLs or JSON
@@ -183,4 +185,25 @@ model CustomFieldValue {
   
   @@unique([asset_id, field_key])
   @@map("custom_field_values")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  asset_id   Int
+  user_id    Int
+  action     String   // CREATE, UPDATE, DELETE, ASSIGN, UNASSIGN, PHOTO_ADD, PHOTO_DELETE, VIDEO_ADD, VIDEO_DELETE
+  field_name String?  // Which field changed (for UPDATE)
+  old_value  String?  // Previous value
+  new_value  String?  // New value
+  details    Json?    // Additional details
+  ip_address String?
+  user_agent String?
+  created_at DateTime @default(now())
+  
+  asset      Asset    @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [user_id], references: [id])
+  
+  @@index([asset_id])
+  @@index([created_at])
+  @@map("audit_logs")
 }

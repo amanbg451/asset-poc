@@ -4,6 +4,9 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { AuditService } from '@/modules/audit/audit.service';
+
+const auditService = new AuditService();
 
 export async function POST(
   request: NextRequest,
@@ -65,6 +68,21 @@ export async function POST(
       where: { id: assetId },
       data: { videos: publicUrl },
     });
+
+    // Add audit log for video upload
+    await auditService.log(
+      assetId,
+      'VIDEO_ADD',
+      {
+        fieldName: 'videos',
+        newValue: publicUrl,
+        additionalDetails: { 
+          videoUrl: publicUrl,
+          fileName: filename
+        }
+      },
+      request
+    );
 
     return NextResponse.json({
       success: true,

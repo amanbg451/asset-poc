@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logger } from '@/common/utils';
+import { AuditService } from '@/modules/audit/audit.service';
+
+const auditService = new AuditService();
 
 export async function POST(
   request: NextRequest,
@@ -18,7 +21,12 @@ export async function POST(
     const assetId = parseInt(id);
     
     const asset = await prisma.asset.findUnique({
-      where: { id: assetId }
+      where: { id: assetId },
+      include: {
+        assignedUser: {
+          select: { id: true, name: true, email: true }
+        }
+      }
     });
     
     if (!asset) {
@@ -35,6 +43,22 @@ export async function POST(
       }
     });
     
+    // Add audit log for unassign
+    await auditService.log(
+      assetId,
+      'UNASSIGN',
+      {
+        fieldName: 'assigned_to',
+        oldValue: asset.assigned_to,
+        newValue: null,
+        additionalDetails: {
+          previousUser: asset.assignedUser?.name,
+          previousUserEmail: asset.assignedUser?.email
+        }
+      },
+      request
+    );
+    
     logger.info('Asset unassigned', { 
       assetId, 
       assetCode: asset.asset_code,
@@ -46,4 +70,4 @@ export async function POST(
     console.error('Unassign asset error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}   
+}
